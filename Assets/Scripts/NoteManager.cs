@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -28,13 +29,16 @@ public class NoteManager : MonoBehaviour
     [Header("Events")]
     // Fired when a melody is matched; passes the matched melody string
     public UnityEvent<string> OnMelodyMatched;
-    // Optional: display messages to player (e.g. "没对应乐谱")
+    // Optional: display messages to player (e.g. "No matching melody")
     public Text messageText;
     // UI texts that show remaining counts for each note resource (index 0=红,1=绿,2=蓝)
     public Text[] resourceTexts = new Text[3];
 
     // Resource counts for each note id (0..2)
     public int[] noteCounts = new int[3] { 5, 5, 5 };
+    // message fade settings
+    public float messageFadeDuration = 2f;
+    private Coroutine messageCoroutine;
     // GameObjects that will be unlocked when the corresponding melody is played.
     // Each element corresponds to the melody at the same index in `allowedMelodies`.
     public GameObject[] melodyUnlockObjects;
@@ -160,7 +164,7 @@ public class NoteManager : MonoBehaviour
                 // Matched a melody. Fire event and return (only first match).
                 OnMelodyMatched?.Invoke(melody);
                 Debug.Log($"Melody matched: {melody}");
-                if (messageText != null) messageText.text = "匹配成功: " + melody;
+                // Do not show matched melody in UI per design.
                 return;
             }
         }
@@ -174,7 +178,7 @@ public class NoteManager : MonoBehaviour
 
         if (sequence.Count == 0)
         {
-            if (messageText != null) messageText.text = "没有音符";
+            ShowMessage("No notes");
             ClearSequence();
             return;
         }
@@ -212,9 +216,9 @@ public class NoteManager : MonoBehaviour
 
                 if (!enough)
                 {
-                    Debug.Log("音符不够");
-                    if (messageText != null) messageText.text = "音符不够";
-                    // TODO: 提示玩家音符不足的反馈（弹窗/动画/音效），并允许用户调整
+                    Debug.Log("Not enough notes");
+                    ShowMessage("Not enough notes");
+                    // TODO: show a clearer in-game feedback for insufficient notes (popup/animation/sfx)
                     ClearSequence();
                     return; // don't consume resources
                 }
@@ -228,13 +232,13 @@ public class NoteManager : MonoBehaviour
                 int melodyIndex = allowedMelodies.IndexOf(melody);
                 if (melodyIndex >= 0) TryUnlockMelody(melodyIndex);
                 Debug.Log($"Melody matched on Play: {melody}");
-                if (messageText != null) messageText.text = "匹配成功: " + melody;
+                // Do not show matched melody in UI per design.
                 ClearSequence();
                 return;
             }
         }
 
-        if (messageText != null) messageText.text = "没对应乐谱";
+        ShowMessage("No matching melody");
         Debug.Log("No matching melody on Play");
         // TODO: 当没有对应乐谱时，添加更显眼的玩家提示（例如声音/高亮/反馈）
         ClearSequence();
@@ -253,15 +257,14 @@ public class NoteManager : MonoBehaviour
     // Utility: get sequence as comma-separated string
     public string GetSequenceString()
     {
-        if (sequence.Count == 0) return "(空)";
+        if (sequence.Count == 0) return "(empty)";
         return string.Join(",", sequence.Select(i => i.ToString()).ToArray());
     }
 
     // Utility: print current sequence to Debug.Log (can be called from Inspector)
     public void DebugLogSequence()
     {
-        Debug.Log("当前乐谱: " + GetSequenceString());
-        if (messageText != null) messageText.text = "当前乐谱: " + GetSequenceString();
+        Debug.Log("Current melody: " + GetSequenceString());
     }
 
     // Update the resource UI texts from `noteCounts` (one Text per color)
@@ -273,6 +276,41 @@ public class NoteManager : MonoBehaviour
             if (resourceTexts[i] == null) continue;
             resourceTexts[i].text = noteCounts[i].ToString();
         }
+    }
+
+    // Show a message in the UI and fade it out over `messageFadeDuration` seconds.
+    public void ShowMessage(string text)
+    {
+        if (messageText == null) return;
+        // stop existing fade
+        if (messageCoroutine != null) StopCoroutine(messageCoroutine);
+        messageText.text = text;
+        var col = messageText.color;
+        col.a = 1f;
+        messageText.color = col;
+        messageCoroutine = StartCoroutine(FadeMessage());
+    }
+
+    private IEnumerator FadeMessage()
+    {
+        if (messageText == null) yield break;
+        float t = 0f;
+        var startColor = messageText.color;
+        while (t < messageFadeDuration)
+        {
+            t += Time.deltaTime;
+            float a = Mathf.Lerp(1f, 0f, t / messageFadeDuration);
+            var c = messageText.color;
+            c.a = a;
+            messageText.color = c;
+            yield return null;
+        }
+        // ensure fully transparent and clear text
+        var endc = messageText.color;
+        endc.a = 0f;
+        messageText.color = endc;
+        messageText.text = "";
+        messageCoroutine = null;
     }
 
     // Try to unlock melody at index; when unlocking, set all children of the provided GameObject active.
