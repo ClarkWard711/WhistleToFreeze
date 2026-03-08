@@ -48,17 +48,29 @@ public class SnowmanManager : MonoBehaviour
     // Optional: UI slider to show current snow amount and optional text to display numeric value
     public UnityEngine.UI.Slider snowSlider;
     public UnityEngine.UI.Text snowValueText;
+    // Optional: UI text to display the current temperature (Cold/Mild/Hot)
+    public UnityEngine.UI.Text temperatureText;
 
     [Header("Temperature Image Alpha")]
     public float activeAlpha = 1f;
     public float inactiveAlpha = 0.5f;
     public bool changeTemperatureImageAlpha = true;
 
+    // Temporary override state: when true we won't let tilemap detection overwrite the temperature
+    private bool tempOverrideActive = false;
+    private float tempOverrideUntil = 0f;
+    private Coroutine tempOverrideCoroutine = null;
+    // override delta relative to the base tilemap temperature (e.g. -1, -2)
+    private int tempOverrideDelta = 0;
+
     private void Start()
     {
         snowAmount = Mathf.Clamp(snowAmount, 0f, maxSnow);
         ApplyTemperatureVisuals();
         UpdateTemperatureImageAlphas();
+
+        // initialize temperature text UI
+        UpdateTemperatureUI();
 
         // cache Tilemap components if available
         frostTilemap = tilemapFrost != null ? tilemapFrost.GetComponent<Tilemap>() : null;
@@ -109,51 +121,76 @@ public class SnowmanManager : MonoBehaviour
     private void DetectCurrentTilemapAndApply()
     {
         var pos = transform.position;
-        Temperature newTemp = currentTemperature;
 
+        // Determine the base temperature from the tilemap at this position
+        Temperature baseTemp = GetBaseTilemapTemperature(pos);
+
+        if (tempOverrideActive && Time.time < tempOverrideUntil)
+        {
+            // While override is active, compute overridden temperature relative to baseTemp
+            int baseIdx = (int)baseTemp;
+            int overIdx = Mathf.Clamp(baseIdx + tempOverrideDelta, 0, 2);
+            var overridden = (Temperature)overIdx;
+            if (overridden != currentTemperature)
+            {
+                Debug.Log($"Temperature overridden (base {baseTemp}) -> {overridden}");
+                currentTemperature = overridden;
+                ApplyTemperatureVisuals();
+                UpdateTemperatureImageAlphas();
+                UpdateTemperatureUI();
+            }
+            return;
+        }
+
+        // Normal behavior: set temperature to baseTemp
+        if (baseTemp != currentTemperature)
+        {
+            Debug.Log($"Temperature changed from {currentTemperature} to {baseTemp}");
+            currentTemperature = baseTemp;
+            ApplyTemperatureVisuals();
+            UpdateTemperatureImageAlphas();
+            UpdateTemperatureUI();
+        }
+    }
+
+    // Return the temperature determined by tilemaps/colliders at `pos` (ignores overrides)
+    private Temperature GetBaseTilemapTemperature(Vector3 pos)
+    {
         // First: try Tilemap.GetTile method (more reliable)
         if (frostTilemap != null)
         {
             var cell = frostTilemap.WorldToCell(pos);
-            if (frostTilemap.GetTile(cell) != null) newTemp = Temperature.Cold;
+            if (frostTilemap.GetTile(cell) != null) return Temperature.Cold;
         }
 
-        if (newTemp == currentTemperature && forestTilemap != null)
+        if (forestTilemap != null)
         {
             var cell = forestTilemap.WorldToCell(pos);
-            if (forestTilemap.GetTile(cell) != null) newTemp = Temperature.Mild;
+            if (forestTilemap.GetTile(cell) != null) return Temperature.Mild;
         }
 
-        if (newTemp == currentTemperature && dessertTilemap != null)
+        if (dessertTilemap != null)
         {
             var cell = dessertTilemap.WorldToCell(pos);
-            if (dessertTilemap.GetTile(cell) != null) newTemp = Temperature.Hot;
+            if (dessertTilemap.GetTile(cell) != null) return Temperature.Hot;
         }
 
-        // Fallback: collider-based detection if tilemap check found nothing
-        if (newTemp == currentTemperature)
+        // Fallback: collider-based detection
+        Collider2D[] hits = Physics2D.OverlapPointAll(pos);
+        foreach (var c in hits)
         {
-            Collider2D[] hits = Physics2D.OverlapPointAll(pos);
-            foreach (var c in hits)
-            {
-                if (c == null) continue;
-                var go = c.gameObject;
-                if (go == tilemapFrost) { newTemp = Temperature.Cold; break; }
-                if (go == tilemapForest) { newTemp = Temperature.Mild; break; }
-                if (go == tilemapDessert) { newTemp = Temperature.Hot; break; }
-                if (tilemapFrost != null && go.transform.IsChildOf(tilemapFrost.transform)) { newTemp = Temperature.Cold; break; }
-                if (tilemapForest != null && go.transform.IsChildOf(tilemapForest.transform)) { newTemp = Temperature.Mild; break; }
-                if (tilemapDessert != null && go.transform.IsChildOf(tilemapDessert.transform)) { newTemp = Temperature.Hot; break; }
-            }
+            if (c == null) continue;
+            var go = c.gameObject;
+            if (go == tilemapFrost) return Temperature.Cold;
+            if (go == tilemapForest) return Temperature.Mild;
+            if (go == tilemapDessert) return Temperature.Hot;
+            if (tilemapFrost != null && go.transform.IsChildOf(tilemapFrost.transform)) return Temperature.Cold;
+            if (tilemapForest != null && go.transform.IsChildOf(tilemapForest.transform)) return Temperature.Mild;
+            if (tilemapDessert != null && go.transform.IsChildOf(tilemapDessert.transform)) return Temperature.Hot;
         }
 
-        if (newTemp != currentTemperature)
-        {
-            Debug.Log($"Temperature changed from {currentTemperature} to {newTemp}");
-            currentTemperature = newTemp;
-            ApplyTemperatureVisuals();
-            UpdateTemperatureImageAlphas();
-        }
+        // Default to currentTemperature if nothing determinable
+        return currentTemperature;
     }
 
     private void ApplyTemperatureVisuals()
@@ -171,6 +208,55 @@ public class SnowmanManager : MonoBehaviour
         SetImageAlpha(temperatureImages, 0, currentTemperature == Temperature.Cold ? activeAlpha : inactiveAlpha);
         SetImageAlpha(temperatureImages, 1, currentTemperature == Temperature.Mild ? activeAlpha : inactiveAlpha);
         SetImageAlpha(temperatureImages, 2, currentTemperature == Temperature.Hot ? activeAlpha : inactiveAlpha);
+    }
+
+    // Public setter to change temperature and update visuals
+    public void SetTemperature(Temperature t)
+    {
+        currentTemperature = t;
+        ApplyTemperatureVisuals();
+        UpdateTemperatureImageAlphas();
+        UpdateTemperatureUI();
+    }
+
+    // Apply a temporary temperature delta for `duration` seconds.
+    // While active, tilemap detection will not overwrite the temperature.
+    public void ApplyTempDelta(int delta, float duration)
+    {
+        if (tempOverrideCoroutine != null) StopCoroutine(tempOverrideCoroutine);
+        tempOverrideDelta = delta;
+        tempOverrideCoroutine = StartCoroutine(TempOverrideCoroutine(delta, duration));
+    }
+
+    private IEnumerator TempOverrideCoroutine(int delta, float duration)
+    {
+        // Determine base temperature at current position and apply delta relative to it
+        var pos = transform.position;
+        var baseTemp = GetBaseTilemapTemperature(pos);
+        int baseIdx = (int)baseTemp;
+        int newIdx = Mathf.Clamp(baseIdx + delta, 0, 2);
+
+        tempOverrideActive = true;
+        tempOverrideUntil = Time.time + duration;
+        tempOverrideDelta = delta;
+
+        SetTemperature((Temperature)newIdx);
+
+        yield return new WaitForSeconds(duration);
+
+        tempOverrideActive = false;
+        tempOverrideUntil = 0f;
+
+        // After override expires, re-evaluate tilemap to pick the proper temperature
+        DetectCurrentTilemapAndApply();
+        tempOverrideCoroutine = null;
+    }
+
+    // Update the optional temperature text UI
+    private void UpdateTemperatureUI()
+    {
+        if (temperatureText == null) return;
+        temperatureText.text = currentTemperature.ToString();
     }
 
     private void SetImageAlpha(Image[] imgs, int index, float alpha)

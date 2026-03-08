@@ -67,11 +67,11 @@ public class PlayerController : MonoBehaviour
         {
             if (direction > 0)
             {
-                GetComponent<SpriteRenderer>().flipX = true;
+                GetComponent<SpriteRenderer>().flipX = false;
             }
             else
             {
-                GetComponent<SpriteRenderer>().flipX = false;
+                GetComponent<SpriteRenderer>().flipX = true;
             }
         }
     }
