@@ -17,16 +17,72 @@ MonoBehaviour:
     m_SerializedData: []
   m_GUID: 85792b6d41e514fb8824caa1d15f6221
   m_SerializeEntries:
-  - m_GUID: 2cda990e2423bbf4892e6590ba056729
-    m_Address: SampleScene
-    m_ReadOnly: 0
-    m_SerializedLabels: []
   - m_GUID: f67db01223ab54fcb81ad38153e7f437
     m_Address: GameManager
     m_ReadOnly: 0
     m_SerializedLabels: []
   - m_GUID: 5e48489d5f6ab43c0b6dbbe80c379266
     m_Address: MainMenu
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+  - m_GUID: 2cda990e2423bbf4892e6590ba056729
+    m_Address: Assets/Scenes/SampleScene.unity
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+  - m_GUID: e14e5a342d32d4c859bb1da31d821170
+    m_Address: Assets/Prefabs/RedNote.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+  - m_GUID: 3e89ba98299aa4fb1978346f017a86d4
+    m_Address: Assets/Prefabs/GreenNote.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+  - m_GUID: d1c68095ac3d340d8af67b5065eccb48
+    m_Address: Assets/Prefabs/BlueNote.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+  - m_GUID: 87c1b625f6f6546ffb923887aa45081f
+    m_Address: Assets/Prefabs/NoteObjects/Cactus.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+  - m_GUID: ea2a8c1fbdea74eb891415eda4419695
+    m_Address: Assets/Prefabs/NoteObjects/Ice.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+  - m_GUID: d03420040674c43469518b51c814e78a
+    m_Address: Assets/Prefabs/NoteObjects/SnowClown.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+  - m_GUID: 9bacca23b157e46bc9e519f57e24171e
+    m_Address: Assets/Prefabs/NoteObjects/Rock.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+  - m_GUID: aba9b4cf008744eb5b33633389ee4dce
+    m_Address: Assets/Prefabs/NoteObjects/WindWeed.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+  - m_GUID: 96240bcc482b14579956667eb807bf89
+    m_Address: Assets/Prefabs/NoteObjects/Bush.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+  - m_GUID: 007b454d6fd6d4283bb9b9cbce1bed9f
+    m_Address: Assets/Prefabs/NoteObjects/Bone.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+  - m_GUID: 6200c9e4c37034d369a69108c221b8dd
+    m_Address: Assets/Prefabs/NoteObjects/Puddle.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+  - m_GUID: 7a615dc974f374dfaa89831f53421235
+    m_Address: Assets/Prefabs/NoteObjects/TreeHole.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+  - m_GUID: 890e71d8a9ea24be98cc9ce8126cb31e
+    m_Address: Assets/Prefabs/NoteObjects/Well.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+  - m_GUID: 9a89f5d9983734350bb42fdf07d252fd
+    m_Address: Assets/Prefabs/NoteObjects/Tree.prefab
     m_ReadOnly: 0
     m_SerializedLabels: []
   m_ReadOnly: 0

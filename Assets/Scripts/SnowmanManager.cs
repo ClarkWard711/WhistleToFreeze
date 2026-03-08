@@ -21,6 +21,8 @@ public class SnowmanManager : MonoBehaviour
     [Header("Snow")]
     public float maxSnow = 100f;
     public float snowAmount = 100f;
+    // When true, snow will not decrease over time
+    public bool pauseMelting = false;
 
     [Header("Temperature & Speeds")]
     public Temperature currentTemperature = Temperature.Mild;
@@ -50,6 +52,22 @@ public class SnowmanManager : MonoBehaviour
     public UnityEngine.UI.Text snowValueText;
     // Optional: UI text to display the current temperature (Cold/Mild/Hot)
     public UnityEngine.UI.Text temperatureText;
+
+    [Header("Hut (Day) UI")]
+    // Slider representing the snow-hut durability/time remaining for the day
+    public UnityEngine.UI.Slider hutSlider;
+    // Max value shown on hutSlider
+    public float hutMax = 100f;
+    // Per-day durations in seconds: day0, day1, day2
+    public float[] hutDayDurations = new float[3] { 120f, 240f, 300f };
+    // Optional: ProgressManager reference so SnowmanManager can use currentDay when starting a day
+    public ProgressManager progressManager;
+
+    private float hutAmount = 0f;
+    private float currentHutDuration = 0f; // seconds
+    private float hutDecreaseRate = 0f; // hut units per second
+    // whether we've already triggered end-of-day/gameover due to snow/hut reaching zero
+    private bool endTriggered = false;
 
     [Header("Temperature Image Alpha")]
     public float activeAlpha = 1f;
@@ -84,18 +102,62 @@ public class SnowmanManager : MonoBehaviour
             snowSlider.value = snowAmount;
         }
         UpdateSnowUI();
+
+        // initialize hut UI (do not start countdown until StartDayHutTimer is called)
+        hutAmount = hutMax;
+        if (hutSlider != null)
+        {
+            hutSlider.maxValue = hutMax;
+            hutSlider.value = hutAmount;
+        }
+    }
+
+    private void Awake()
+    {
+        // record initial position on first Awake
+        initialPosition = transform.position;
+    }
+
+    // stored initial position to allow resetting on game restart
+    private Vector3 initialPosition;
+
+    public void ResetToInitialPosition()
+    {
+        transform.position = initialPosition;
     }
 
     private void Update()
     {
         DetectCurrentTilemapAndApply();
-        // melt snow based on current temperature
-        float speed = meltSpeeds[Mathf.Clamp((int)currentTemperature, 0, meltSpeeds.Length - 1)];
-        if (snowAmount > 0f)
+        // melt snow based on current temperature (unless paused)
+        if (!pauseMelting)
         {
-            snowAmount = Mathf.Max(0f, snowAmount - speed * Time.deltaTime);
+            float speed = meltSpeeds[Mathf.Clamp((int)currentTemperature, 0, meltSpeeds.Length - 1)];
+            if (snowAmount > 0f)
+            {
+                snowAmount = Mathf.Max(0f, snowAmount - speed * Time.deltaTime);
+            }
+            // hut countdown (based on current day duration). Uses same pause flag to pause during panels.
+            if (currentHutDuration > 0f && hutDecreaseRate > 0f)
+            {
+                hutAmount = Mathf.Max(0f, hutAmount - hutDecreaseRate * Time.deltaTime);
+            }
         }
         UpdateSnowUI();
+        UpdateHutUI();
+
+        // If snow or hut reached zero, trigger end-of-day behavior once
+        if (!endTriggered && (snowAmount <= 0f || hutAmount <= 0f))
+        {
+            endTriggered = true;
+            // Pause melting and notify ProgressManager to handle end-of-day (force failure)
+            pauseMelting = true;
+            if (progressManager != null)
+            {
+                string reason = snowAmount <= 0f ? "Snow depleted" : "Hut timer expired";
+                progressManager.HandleDayEndByTimer(true, reason);
+            }
+        }
     }
 
     // Public helper to add snow (e.g., player action)
@@ -257,6 +319,33 @@ public class SnowmanManager : MonoBehaviour
     {
         if (temperatureText == null) return;
         temperatureText.text = currentTemperature.ToString();
+    }
+
+    private void UpdateHutUI()
+    {
+        if (hutSlider != null)
+        {
+            hutSlider.value = hutAmount;
+        }
+    }
+
+    // Start the hut timer for the given day (dayIndex 0-based). If dayIndex < 0 and progressManager assigned, uses progressManager.currentDay.
+    public void StartDayHutTimer(int dayIndex = -1)
+    {
+        int idx = dayIndex;
+        if (idx < 0 && progressManager != null) idx = progressManager.currentDay;
+        idx = Mathf.Clamp(idx, 0, hutDayDurations.Length - 1);
+        currentHutDuration = Mathf.Max(0.0001f, hutDayDurations[idx]);
+        hutAmount = hutMax;
+        hutDecreaseRate = hutMax / currentHutDuration;
+        // reset any previous end trigger so timer can fire again
+        endTriggered = false;
+        // update UI
+        if (hutSlider != null)
+        {
+            hutSlider.maxValue = hutMax;
+            hutSlider.value = hutAmount;
+        }
     }
 
     private void SetImageAlpha(Image[] imgs, int index, float alpha)

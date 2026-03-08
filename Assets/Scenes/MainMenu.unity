@@ -585,8 +585,8 @@ MonoBehaviour:
     m_SubObjectName: 
     m_SubObjectType: 
     m_EditorAssetChanged: 0
-  StartGame: {fileID: 0}
-  QuitGame: {fileID: 0}
+  StartGame: {fileID: 1756376661}
+  QuitGame: {fileID: 1848694338}
   FrontImage: {fileID: 0}
   isEntering: 0
 --- !u!1 &1530239466

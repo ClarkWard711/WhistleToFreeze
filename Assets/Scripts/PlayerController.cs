@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Mathematics;
-using UnityEditor.U2D;
+
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
@@ -12,6 +12,7 @@ public class PlayerController : MonoBehaviour
     private Animator anime;
     // private Animator Anime;
     public float speed;
+    public bool allowMovement = false;
 
     //bool run = false;
 
@@ -45,6 +46,11 @@ public class PlayerController : MonoBehaviour
 
     void Movement()
     {
+        if (!allowMovement)
+        {
+            if (playerRb != null) playerRb.velocity = Vector2.zero;
+            return;
+        }
         float Hmove = Input.GetAxis("Horizontal");
         float Vmove = Input.GetAxis("Vertical");
         float Move = Mathf.Abs(Hmove) < Mathf.Abs(Vmove) ? Vmove : Hmove;

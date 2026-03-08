@@ -20,6 +20,8 @@ public class NoteManager : MonoBehaviour
 
     [Header("Behavior")]
     public int maxNotes = 6;
+    // Whether input of notes (U/I/O keys) is accepted
+    public bool allowInput = true;
 
     [Header("Melodies (as comma-separated note ids, e.g. 0,1,2)")]
     // Designer can put specific melodies here (order fixed). Example defaults provided.
@@ -96,6 +98,7 @@ public class NoteManager : MonoBehaviour
 
     private void Update()
     {
+        if (!allowInput) return;
         if (Input.GetKeyDown(KeyCode.U)) AddNoteAndCheck(0);
         if (Input.GetKeyDown(KeyCode.I)) AddNoteAndCheck(1);
         if (Input.GetKeyDown(KeyCode.O)) AddNoteAndCheck(2);
@@ -388,26 +391,26 @@ public class NoteManager : MonoBehaviour
                 ShowMessage("Temperature -1 Lv (30s)");
                 break;
             case 2: // third melody: restore 10% snow
-                if (snowmanManager != null) snowmanManager.AddSnow(snowmanManager.maxSnow * 0.10f);
-                ShowMessage("Restore Snow 10%");
+                if (snowmanManager != null) snowmanManager.AddSnow(snowmanManager.maxSnow * 0.10f * 2f);
+                ShowMessage("Restore Snow 20%");
                 break;
             case 3: // fourth melody: reserved
-                if (snowmanManager != null) snowmanManager.AddSnow(snowmanManager.maxSnow * 0.20f);
-                ShowMessage("Restore Snow 20%");
+                if (snowmanManager != null) snowmanManager.AddSnow(snowmanManager.maxSnow * 0.20f * 2f);
+                ShowMessage("Restore Snow 40%");
                 break;
             case 4: // fifth melody: apply 1,2,3 simultaneously
                 if (movementTarget != null) StartSpeedBoost(speedMultiplier, 30f);
                 if (snowmanManager != null) StartTempDelta(-1, 30f);
-                if (snowmanManager != null) snowmanManager.AddSnow(snowmanManager.maxSnow * 0.10f);
-                ShowMessage("Speed Boost + Temperature -1 Lv + Restore Snow 10%");
+                if (snowmanManager != null) snowmanManager.AddSnow(snowmanManager.maxSnow * 0.10f * 2f);
+                ShowMessage("Speed Boost + Temperature -1 Lv + Restore Snow 20%");
                 break;
             case 5: // sixth melody: decrease temperature by 2 levels for 30s
                 if (snowmanManager != null) StartTempDelta(-2, 30f);
                 ShowMessage("Temperature -2 Lv (30s)");
                 break;
             case 6: // seventh melody: restore 30% snow
-                if (snowmanManager != null) snowmanManager.AddSnow(snowmanManager.maxSnow * 0.30f);
-                ShowMessage("Restore Snow 30%");
+                if (snowmanManager != null) snowmanManager.AddSnow(snowmanManager.maxSnow * 0.30f * 2f);
+                ShowMessage("Restore Snow 60%");
                 break;
             default:
                 break;
